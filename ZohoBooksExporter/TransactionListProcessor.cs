@@ -56,6 +56,7 @@ namespace ZohoBooksExporter
                 case "journal":
                 case "opening_balance":
                 case "base_currency_adjustment":
+                case "bill":
                     transactionData = JObject.FromObject(new { imported_transactions = new string[0] });
                     break;
                 default:

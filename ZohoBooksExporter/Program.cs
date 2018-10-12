@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using CsvHelper;
 using Microsoft.Extensions.Configuration;
+using ShellProgressBar;
 
 namespace ZohoBooksExporter
 {
@@ -41,10 +42,28 @@ namespace ZohoBooksExporter
             if (!DateTime.TryParseExact(to, "d MMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out toDate))
                 toDate = DateTime.UtcNow;
 
-            TransactionListProcessor listProcessor = new TransactionListProcessor(client, (current, total) => Console.WriteLine($"{current} / {total}"));
-            IReadOnlyList<Transaction> transactions = await listProcessor.GetList(accountId, fromDate, toDate);
+            Console.WriteLine();
 
-            await WriteCsv($"{accountName} - {fromDate.ToString("dd MMM yyyy")} - {toDate.ToString("dd MMM yyyy")}.csv", transactions);
+            ProgressBarOptions options = new ProgressBarOptions
+            {
+                ForegroundColor = ConsoleColor.Yellow,
+                ForegroundColorDone = ConsoleColor.DarkGreen,
+                BackgroundColor = ConsoleColor.DarkGray,
+                BackgroundCharacter = '\u2593'
+            };
+            using (ProgressBar progressBar = new ProgressBar(1, "Initial message", options))
+            {
+                TransactionListProcessor listProcessor = new TransactionListProcessor(client, (current, total) => UpdateProgress(progressBar, current, total));
+                IReadOnlyList<Transaction> transactions = await listProcessor.GetList(accountId, fromDate, toDate);
+
+                await WriteCsv($"{accountName} - From {fromDate.ToString("dd MMM yyyy")} to {toDate.ToString("dd MMM yyyy")}.csv", transactions);
+            }
+        }
+
+        private static void UpdateProgress(ProgressBar progressBar, int current, int total)
+        {
+            progressBar.MaxTicks = total;
+            progressBar.Tick($"   Downloading transaction {current} out of {total}");
         }
 
         private static async Task WriteCsv(string fileName, IReadOnlyList<Transaction> transactions)
@@ -69,11 +88,7 @@ namespace ZohoBooksExporter
 
                 await writer.NextRecordAsync();
 
-                foreach (Transaction transaction in transactions)
-                {
-                    writer.WriteRecord(transaction);
-                    await writer.NextRecordAsync();
-                }
+                writer.WriteRecords(transactions);
             }
         }
     }
