@@ -20,6 +20,11 @@ namespace ZohoBooksExporter
             this.organizationId = organizationId;
         }
 
+        public async Task<JObject> GetAccounts()
+        {
+            return await Get($"chartofaccounts?organization_id={this.organizationId}");
+        }
+
         public async Task<JObject> GetTransactions(string account, DateTime from, DateTime to, int page)
         {
             return await Get($"banktransactions?organization_id={this.organizationId}&account_id={account}" +

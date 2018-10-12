@@ -1,16 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using CsvHelper;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json.Linq;
 
 namespace ZohoBooksExporter
 {
     class Program
     {
-        async static Task Main(string[] args)
+        static async Task Main(string[] args)
         {
             IConfigurationBuilder builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
@@ -26,8 +26,11 @@ namespace ZohoBooksExporter
             Console.Write($"End date [{DateTime.UtcNow.ToString("dd MMM yyyy")}]: ");
             string to = Console.ReadLine();
 
-            Console.Write("Account ID: ");
-            string accountId = Console.ReadLine();
+            AccountCompletionHandler chartOfAccounts = new AccountCompletionHandler(await client.GetAccounts());
+            ReadLine.AutoCompletionHandler = chartOfAccounts;
+            ReadLine.HistoryEnabled = false;
+            string accountName = ReadLine.Read("Account: ");
+            string accountId = chartOfAccounts.GetAccountId(accountName);
 
             DateTime fromDate;
             DateTime toDate;
@@ -38,16 +41,19 @@ namespace ZohoBooksExporter
             if (!DateTime.TryParseExact(to, "d MMM yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out toDate))
                 toDate = DateTime.UtcNow;
 
-            await ProcessList(client, accountId, fromDate, toDate);
+            TransactionListProcessor listProcessor = new TransactionListProcessor(client, (current, total) => Console.WriteLine($"{current} / {total}"));
+            IReadOnlyList<Transaction> transactions = await listProcessor.GetList(accountId, fromDate, toDate);
+
+            await WriteCsv($"{accountName} - {fromDate.ToString("dd MMM yyyy")} - {toDate.ToString("dd MMM yyyy")}.csv", transactions);
         }
 
-        private static async Task ProcessList(ZohoApiClient client, string accountId, DateTime from, DateTime to)
+        private static async Task WriteCsv(string fileName, IReadOnlyList<Transaction> transactions)
         {
-            using (TextWriter textWriter = File.CreateText($"Account {accountId} - {from.ToString("dd MMM yyyy")} - {to.ToString("dd MMM yyyy")}.csv"))
+            using (TextWriter textWriter = File.CreateText(fileName))
             {
                 CsvWriter writer = new CsvWriter(textWriter);
 
-                writer.WriteRecord(new
+                writer.WriteRecord(new Transaction
                 {
                     Date = "date",
                     StatementDate = "statement_date",
@@ -63,61 +69,12 @@ namespace ZohoBooksExporter
 
                 await writer.NextRecordAsync();
 
-                JObject transactions;
-                int page = 1;
-                do
+                foreach (Transaction transaction in transactions)
                 {
-                    transactions = await client.GetTransactions(accountId, from, to, page);
-
-                    foreach (JObject transaction in (JArray)transactions["banktransactions"])
-                    {
-                        await ProcessTransaction(client, writer, transaction);
-                    }
-
-                    page++;
-
-                } while ((bool)transactions["page_context"]["has_more_page"]);
+                    writer.WriteRecord(transaction);
+                    await writer.NextRecordAsync();
+                }
             }
-        }
-
-        private static async Task ProcessTransaction(ZohoApiClient client, CsvWriter writer, JObject transaction)
-        {
-            JToken transactionData;
-            switch ((string)transaction["transaction_type"])
-            {
-                case "expense":
-                    transactionData = (await client.GetExpense((string)transaction["transaction_id"]))["expense"];
-                    break;
-                case "vendor_payment":
-                    transactionData = (await client.GetVendorPayment((string)transaction["transaction_id"]))["vendorpayment"];
-                    break;
-                case "journal":
-                case "opening_balance":
-                case "base_currency_adjustment":
-                    transactionData = JObject.FromObject(new { imported_transactions = new string[0] });
-                    break;
-                default:
-                    transactionData = (await client.GetTransaction((string)transaction["transaction_id"]))["banktransaction"];
-                    break;
-            }
-
-            JArray importedTransactions = (JArray)transactionData["imported_transactions"];
-
-            writer.WriteRecord(new
-            {
-                Date = DateTime.Parse((string)transaction["date"]).ToString("dd/MM/yyyy"),
-                StatementDate = importedTransactions.Count > 0 ? DateTime.Parse((string)importedTransactions[0]["date"]).ToString("dd/MM/yyyy") : "",
-                Description = importedTransactions.Count > 0 ? (string)importedTransactions[0]["description"] : (string)transaction["description"],
-                Amount = ((string)transaction["debit_or_credit"] == "credit" ? -1m : 1m) * (decimal)transaction["amount"],
-                TransactionType = (string)transaction["transaction_type"],
-                Account = (string)transaction["account_name"],
-                OtherAccount = (string)transaction["offset_account_name"],
-                TransactionId = (string)transaction["transaction_id"],
-                ImportedTransactionId = (string)transaction["imported_transaction_id"],
-                RunningBalance = (string)transaction["running_balance"],
-            });
-
-            await writer.NextRecordAsync();
         }
     }
 }
