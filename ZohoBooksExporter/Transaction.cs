@@ -20,6 +20,8 @@
 
         public string ImportedTransactionId { get; set; }
 
+        public string Documents { get; set; }
+
         public string RunningBalance { get; set; }
     }
 }

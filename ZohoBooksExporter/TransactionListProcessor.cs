@@ -57,7 +57,7 @@ namespace ZohoBooksExporter
                 case "opening_balance":
                 case "base_currency_adjustment":
                 case "bill":
-                    transactionData = JObject.FromObject(new { imported_transactions = new string[0] });
+                    transactionData = JObject.FromObject(new { imported_transactions = new string[0], documents = new string[0] });
                     break;
                 default:
                     transactionData = (await client.GetTransaction((string)transaction["transaction_id"]))["banktransaction"];
@@ -77,6 +77,7 @@ namespace ZohoBooksExporter
                 OtherAccount = (string)transaction["offset_account_name"],
                 TransactionId = (string)transaction["transaction_id"],
                 ImportedTransactionId = (string)transaction["imported_transaction_id"],
+                Documents = (string)((JArray)transactionData["documents"]).FirstOrDefault()?["file_name"],
                 RunningBalance = (string)transaction["running_balance"],
             };
         }

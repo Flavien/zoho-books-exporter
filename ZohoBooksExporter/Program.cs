@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using CsvHelper;
 using Microsoft.Extensions.Configuration;
@@ -51,7 +52,7 @@ namespace ZohoBooksExporter
                 BackgroundColor = ConsoleColor.DarkGray,
                 BackgroundCharacter = '\u2593'
             };
-            using (ProgressBar progressBar = new ProgressBar(1, "Initial message", options))
+            using (ProgressBar progressBar = new ProgressBar(1, "   Starting download", options))
             {
                 TransactionListProcessor listProcessor = new TransactionListProcessor(client, (current, total) => UpdateProgress(progressBar, current, total));
                 IReadOnlyList<Transaction> transactions = await listProcessor.GetList(accountId, fromDate, toDate);
@@ -68,7 +69,8 @@ namespace ZohoBooksExporter
 
         private static async Task WriteCsv(string fileName, IReadOnlyList<Transaction> transactions)
         {
-            using (TextWriter textWriter = File.CreateText(fileName))
+            using (Stream file = File.Create(fileName))
+            using (TextWriter textWriter = new StreamWriter(file, new UTF8Encoding(true)))
             {
                 CsvWriter writer = new CsvWriter(textWriter);
 
@@ -83,6 +85,7 @@ namespace ZohoBooksExporter
                     OtherAccount = "other_account",
                     TransactionId = "transaction_id",
                     ImportedTransactionId = "statement_id",
+                    Documents = "documents",
                     RunningBalance = "running_balance",
                 });
 
