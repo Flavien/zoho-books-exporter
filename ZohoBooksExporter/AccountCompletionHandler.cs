@@ -27,7 +27,7 @@ namespace ZohoBooksExporter
         {
             return accounts
                 .Select(account => account.Name)
-                .Where(account => account.StartsWith(text, StringComparison.InvariantCultureIgnoreCase))
+                .Where(account => account.Contains(text, StringComparison.InvariantCultureIgnoreCase))
                 .ToArray();
         }
 

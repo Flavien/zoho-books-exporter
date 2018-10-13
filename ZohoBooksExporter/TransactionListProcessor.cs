@@ -9,15 +9,17 @@ namespace ZohoBooksExporter
     public class TransactionListProcessor
     {
         private readonly ZohoApiClient client;
+        private readonly string accountId;
         private readonly Action<int, int> onProgress;
 
-        public TransactionListProcessor(ZohoApiClient client, Action<int, int> onProgress)
+        public TransactionListProcessor(ZohoApiClient client, string accountId, Action<int, int> onProgress)
         {
             this.client = client;
+            this.accountId = accountId;
             this.onProgress = onProgress;
         }
 
-        public async Task<IReadOnlyList<Transaction>> GetList(string accountId, DateTime from, DateTime to)
+        public async Task<IReadOnlyList<Transaction>> GetList(DateTime from, DateTime to)
         {
             JObject transactionsResult;
             List<JObject> jsonTransactions = new List<JObject>();
@@ -27,7 +29,7 @@ namespace ZohoBooksExporter
                 transactionsResult = await client.GetTransactions(accountId, from, to, page);
 
                 jsonTransactions.AddRange(((JArray)transactionsResult["banktransactions"]).Cast<JObject>());
-                
+
                 page++;
 
             } while ((bool)transactionsResult["page_context"]["has_more_page"]);
@@ -64,21 +66,25 @@ namespace ZohoBooksExporter
                     break;
             }
 
-            JArray importedTransactions = (JArray)transactionData["imported_transactions"];
+            JToken importedTransaction = ((JArray)transactionData["imported_transactions"])
+                .FirstOrDefault(imported => string.Equals((string)imported["account_id"], this.accountId, StringComparison.Ordinal));
+
+            if (importedTransaction == null)
+                importedTransaction = ((JArray)transactionData["imported_transactions"]).FirstOrDefault();
 
             return new Transaction()
             {
                 Date = DateTime.Parse((string)transaction["date"]).ToString("dd/MM/yyyy"),
-                StatementDate = importedTransactions.Count > 0 ? DateTime.Parse((string)importedTransactions[0]["date"]).ToString("dd/MM/yyyy") : "",
-                Description = importedTransactions.Count > 0 ? (string)importedTransactions[0]["description"] : (string)transaction["description"],
+                StatementDate = importedTransaction != null ? DateTime.Parse((string)importedTransaction["date"]).ToString("dd/MM/yyyy") : "",
+                Description = importedTransaction != null ? (string)importedTransaction["description"] : (string)transaction["description"],
                 Amount = (((string)transaction["debit_or_credit"] == "credit" ? -1m : 1m) * (decimal)transaction["amount"]).ToString(),
                 TransactionType = (string)transaction["transaction_type"],
                 Account = (string)transaction["account_name"],
                 OtherAccount = (string)transaction["offset_account_name"],
                 TransactionId = (string)transaction["transaction_id"],
                 ImportedTransactionId = (string)transaction["imported_transaction_id"],
-                Documents = (string)((JArray)transactionData["documents"]).FirstOrDefault()?["file_name"],
                 RunningBalance = (string)transaction["running_balance"],
+                Documents = (string)((JArray)transactionData["documents"]).FirstOrDefault()?["file_name"],
             };
         }
     }

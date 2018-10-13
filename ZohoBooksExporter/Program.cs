@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CsvHelper;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
 using ShellProgressBar;
 
 namespace ZohoBooksExporter
@@ -22,13 +23,15 @@ namespace ZohoBooksExporter
 
             ZohoApiClient client = new ZohoApiClient(configuration["api_host"], configuration["api_auth_token"], configuration["organization_id"]);
 
+            Task<JObject> accountsJson = client.GetAccounts();
+
             Console.Write("Start date [01 Jan 2000]: ");
             string from = Console.ReadLine();
 
             Console.Write($"End date [{DateTime.UtcNow.ToString("dd MMM yyyy")}]: ");
             string to = Console.ReadLine();
 
-            AccountCompletionHandler chartOfAccounts = new AccountCompletionHandler(await client.GetAccounts());
+            AccountCompletionHandler chartOfAccounts = new AccountCompletionHandler(await accountsJson);
             ReadLine.AutoCompletionHandler = chartOfAccounts;
             ReadLine.HistoryEnabled = false;
             string accountName = ReadLine.Read("Account: ");
@@ -54,8 +57,8 @@ namespace ZohoBooksExporter
             };
             using (ProgressBar progressBar = new ProgressBar(1, "   Starting download", options))
             {
-                TransactionListProcessor listProcessor = new TransactionListProcessor(client, (current, total) => UpdateProgress(progressBar, current, total));
-                IReadOnlyList<Transaction> transactions = await listProcessor.GetList(accountId, fromDate, toDate);
+                TransactionListProcessor listProcessor = new TransactionListProcessor(client, accountId, (current, total) => UpdateProgress(progressBar, current, total));
+                IReadOnlyList<Transaction> transactions = await listProcessor.GetList(fromDate, toDate);
 
                 await WriteCsv($"{accountName} - From {fromDate.ToString("dd MMM yyyy")} to {toDate.ToString("dd MMM yyyy")}.csv", transactions);
             }
@@ -85,8 +88,8 @@ namespace ZohoBooksExporter
                     OtherAccount = "other_account",
                     TransactionId = "transaction_id",
                     ImportedTransactionId = "statement_id",
-                    Documents = "documents",
                     RunningBalance = "running_balance",
+                    Documents = "documents",
                 });
 
                 await writer.NextRecordAsync();
