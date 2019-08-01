@@ -86,6 +86,8 @@ namespace ZohoBooksExporter
                     TransactionType = "transaction_type",
                     Account = "account",
                     OtherAccount = "other_account",
+                    PaidThrough = "paid_through",
+                    VendorName = "vendor_name",
                     TransactionId = "transaction_id",
                     ImportedTransactionId = "statement_id",
                     RunningBalance = "running_balance",

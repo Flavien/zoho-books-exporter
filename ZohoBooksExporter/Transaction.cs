@@ -16,6 +16,10 @@
 
         public string OtherAccount { get; set; }
 
+        public string PaidThrough { get; set; }
+
+        public string VendorName { get; set; }
+
         public string TransactionId { get; set; }
 
         public string ImportedTransactionId { get; set; }

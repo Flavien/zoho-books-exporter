@@ -81,6 +81,8 @@ namespace ZohoBooksExporter
                 TransactionType = (string)transaction["transaction_type"],
                 Account = (string)transaction["account_name"],
                 OtherAccount = (string)transaction["offset_account_name"],
+                PaidThrough = (string)transactionData["paid_through_account_name"],
+                VendorName = (string)transactionData["vendor_name"],
                 TransactionId = (string)transaction["transaction_id"],
                 ImportedTransactionId = (string)transaction["imported_transaction_id"],
                 RunningBalance = (string)transaction["running_balance"],
