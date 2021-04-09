@@ -61,16 +61,19 @@ namespace ZohoBooksExporter
                 case "bill":
                     transactionData = JObject.FromObject(new { imported_transactions = new string[0], documents = new string[0] });
                     break;
+                case "invoice":
+                    transactionData = (await client.GetInvoice((string)transaction["transaction_id"]))["invoice"];
+                    break;
                 default:
                     transactionData = (await client.GetTransaction((string)transaction["transaction_id"]))["banktransaction"];
                     break;
             }
 
             JToken importedTransaction = ((JArray)transactionData["imported_transactions"])
-                .FirstOrDefault(imported => string.Equals((string)imported["account_id"], this.accountId, StringComparison.Ordinal));
+                ?.FirstOrDefault(imported => string.Equals((string)imported["account_id"], this.accountId, StringComparison.Ordinal));
 
             if (importedTransaction == null)
-                importedTransaction = ((JArray)transactionData["imported_transactions"]).FirstOrDefault();
+                importedTransaction = ((JArray)transactionData["imported_transactions"])?.FirstOrDefault();
 
             return new Transaction()
             {
@@ -82,7 +85,7 @@ namespace ZohoBooksExporter
                 Account = (string)transaction["account_name"],
                 OtherAccount = (string)transaction["offset_account_name"],
                 PaidThrough = (string)transactionData["paid_through_account_name"],
-                VendorName = (string)transactionData["vendor_name"],
+                VendorName = (string)transactionData["vendor_name"] ?? (string)transactionData["customer_name"],
                 TransactionId = (string)transaction["transaction_id"],
                 ImportedTransactionId = (string)transaction["imported_transaction_id"],
                 RunningBalance = (string)transaction["running_balance"],

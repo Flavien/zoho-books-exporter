@@ -46,6 +46,11 @@ namespace ZohoBooksExporter
             return await Get($"vendorpayments/{transactionId}?organization_id={this.organizationId}");
         }
 
+        public async Task<JObject> GetInvoice(string invoiceId)
+        {
+            return await Get($"invoices/{invoiceId}?organization_id={this.organizationId}");
+        }
+
         private async Task<JObject> Get(string url)
         {
             using (HttpClient client = new HttpClient())
@@ -54,7 +59,8 @@ namespace ZohoBooksExporter
 
                 HttpResponseMessage message = await client.GetAsync($"https://{this.host}/api/v3/{url}");
 
-                string response = await message.EnsureSuccessStatusCode().Content.ReadAsStringAsync();
+                string response = await message.Content.ReadAsStringAsync();
+                message.EnsureSuccessStatusCode();
 
                 return JObject.Parse(response);
             }
