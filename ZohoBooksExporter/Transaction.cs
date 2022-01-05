@@ -1,31 +1,30 @@
-﻿namespace ZohoBooksExporter
+﻿namespace ZohoBooksExporter;
+
+public record Transaction
 {
-    public class Transaction
-    {
-        public string Date { get; set; }
+    public string Date { get; init; }
 
-        public string StatementDate { get; set; }
+    public string StatementDate { get; init; }
 
-        public string Description { get; set; }
+    public string Description { get; init; }
 
-        public string Amount { get; set; }
+    public string Amount { get; init; }
 
-        public string TransactionType { get; set; }
+    public string TransactionType { get; init; }
 
-        public string Account { get; set; }
+    public string Account { get; init; }
 
-        public string OtherAccount { get; set; }
+    public string OtherAccount { get; init; }
 
-        public string PaidThrough { get; set; }
+    public string PaidThrough { get; init; }
 
-        public string VendorName { get; set; }
+    public string VendorName { get; init; }
 
-        public string TransactionId { get; set; }
+    public string TransactionId { get; init; }
 
-        public string ImportedTransactionId { get; set; }
+    public string ImportedTransactionId { get; init; }
 
-        public string RunningBalance { get; set; }
+    public string RunningBalance { get; init; }
 
-        public string Documents { get; set; }
-    }
+    public string Documents { get; init; }
 }
