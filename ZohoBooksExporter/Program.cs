@@ -20,8 +20,25 @@ class Program
             .AddJsonFile("appsettings.json");
 
         IConfigurationRoot configuration = builder.Build();
+        string domain = configuration["zoho_domain"];
 
-        ZohoApiClient client = new(configuration["api_host"], configuration["api_auth_token"], configuration["organization_id"]);
+        Console.WriteLine($"1. Visit https://api-console.{domain}");
+        Console.WriteLine($"2. Create a self-client application");
+        Console.WriteLine($"3. Generate a code using the following scope: ZohoBooks.fullaccess.READ");
+
+        Console.Write("Paste self-client code: ");
+        string code = Console.ReadLine();
+
+        OAuthClient oauthClient = new(
+            $"accounts.{domain}",
+            configuration["oauth:client_id"],
+            configuration["oauth:client_secret"]);
+        string accessToken = await oauthClient.GetAccessToken(code);
+
+        ZohoApiClient client = new(
+            $"books.{domain}",
+            accessToken,
+            configuration["organization_id"]);
 
         Task<JObject> accountsJson = client.GetAccounts();
 

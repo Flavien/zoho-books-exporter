@@ -55,7 +55,7 @@ public class ZohoApiClient
     {
         using (HttpClient client = new())
         {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Zoho-authtoken", _accessToken);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Zoho-oauthtoken", _accessToken);
 
             HttpResponseMessage message = await client.GetAsync($"https://{_host}/api/v3/{url}");
 
