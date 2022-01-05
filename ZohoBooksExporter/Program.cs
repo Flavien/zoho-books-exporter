@@ -24,6 +24,7 @@ class Program
 
         Console.WriteLine($"1. Visit https://api-console.{domain}");
         Console.WriteLine($"2. Create a self-client application");
+        Console.WriteLine($"   Make sure the client_id and client_secret are set appropriately in the appsettings.json file");
         Console.WriteLine($"3. Generate a code using the following scope: ZohoBooks.fullaccess.READ");
 
         Console.Write("Paste self-client code: ");

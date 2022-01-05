@@ -4,11 +4,8 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
-using Quickwire.Attributes;
 
-[RegisterService(ServiceLifetime.Singleton)]
 public class OAuthClient
 {
     private readonly string _domain;
