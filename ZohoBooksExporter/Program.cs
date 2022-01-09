@@ -22,19 +22,36 @@ class Program
         IConfigurationRoot configuration = builder.Build();
         string domain = configuration["zoho_domain"];
 
-        Console.WriteLine($"1. Visit https://api-console.{domain}");
-        Console.WriteLine($"2. Create a self-client application");
-        Console.WriteLine($"   Make sure the client_id and client_secret are set appropriately in the appsettings.json file");
-        Console.WriteLine($"3. Generate a code using the following scope: ZohoBooks.fullaccess.READ");
-
-        Console.Write("Paste self-client code: ");
-        string code = Console.ReadLine();
-
         OAuthClient oauthClient = new(
             $"accounts.{domain}",
             configuration["oauth:client_id"],
             configuration["oauth:client_secret"]);
-        string accessToken = await oauthClient.GetAccessToken(code);
+
+        CredentialsStore credentialsStore = new();
+        string refreshToken = credentialsStore.Get();
+        if (refreshToken == null)
+        {
+            Console.WriteLine($"1. Visit https://api-console.{domain}");
+            Console.WriteLine($"2. Create a self-client application");
+            Console.WriteLine($"   Make sure the client_id and client_secret are set appropriately in the appsettings.json file");
+            Console.WriteLine($"3. Generate a code using the following scope: ZohoBooks.fullaccess.READ");
+
+            Console.Write("Paste self-client code: ");
+            string code = Console.ReadLine();
+
+            refreshToken = await oauthClient.GetRefreshToken(code);
+
+            await credentialsStore.Set(refreshToken);
+        }
+
+        string accessToken = await oauthClient.GetAccessToken(refreshToken);
+
+        if (accessToken == null)
+        {
+            Console.WriteLine("The refresh token is invalid or expired. Run this program again to recreate one.");
+            credentialsStore.Clear();
+            return;
+        }
 
         ZohoApiClient client = new(
             $"books.{domain}",
