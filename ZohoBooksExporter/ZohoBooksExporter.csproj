@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="7.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="ReadLine" Version="2.0.1" />
     <PackageReference Include="ShellProgressBar" Version="4.2.0" />
   </ItemGroup>
